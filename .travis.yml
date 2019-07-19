@@ -53,10 +53,10 @@ script:
   # Delete all previous results
   - rm -rf example_5_314
   # Go!
-  #- travis_wait 60 Rscript example_5.R
+  - travis_wait 60 Rscript example_5.R
   # Check dead links
-  #- rm .travis.yml
-  #- ./scripts/check_dead_links
+  - rm .travis.yml
+  - ./scripts/check_dead_links
 
 after_success:
   - cd ~/GitHubs/pirouette_article; find .
