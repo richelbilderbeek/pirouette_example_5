@@ -28,7 +28,6 @@ if (length(args) > 1) {
   )
 }
 
-suppressMessages(library(ggtree))
 suppressMessages(library(ggplot2))
 library(pirouette)
 library(babette)
