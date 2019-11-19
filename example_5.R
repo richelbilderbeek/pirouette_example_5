@@ -5,9 +5,6 @@
 #
 #
 
-# Set the RNG seed
-rng_seed <- 314
-
 suppressMessages(library(ggplot2))
 library(pirouette)
 library(babette)
@@ -15,6 +12,7 @@ library(beautier)
 
 root_folder <- getwd()
 example_no <- 5
+rng_seed <- 314
 example_folder <- file.path(root_folder, paste0("example_", example_no, "_", rng_seed))
 dir.create(example_folder, showWarnings = FALSE, recursive = TRUE)
 setwd(example_folder)
@@ -29,17 +27,32 @@ alignment_params <- create_alignment_params(
     mutation_rate = 0.1
   ),
   root_sequence = create_blocked_dna(length = 1000),
-  rng_seed = rng_seed
+  rng_seed = rng_seed,
+  fasta_filename = "true_alignment.fas"
 )
 
 # JC69, strict, Yule
 generative_experiment <- create_gen_experiment()
+generative_experiment$beast2_options$input_filename <- "true_alignment_gen.xml"
+generative_experiment$beast2_options$output_state_filename <- "true_alignment_gen.xml.state"
+generative_experiment$inference_model$mcmc$tracelog$filename <- "true_alignment_gen.log"
+generative_experiment$inference_model$mcmc$treelog$filename <- "true_alignment_gen.trees"
+generative_experiment$inference_model$mcmc$screenlog$filename <- "true_alignment_gen.csv"
+generative_experiment$errors_filename <- "true_errors_gen.csv"
 check_experiment(generative_experiment)
 
 # All non-Yule tree priors
 candidate_experiments <- create_all_experiments(
   exclude_model = generative_experiment$inference_model
 )
+for (i in seq_along(candidate_experiments)) {
+  candidate_experiments[[i]]$beast2_options$input_filename <- "true_alignment_best.xml"
+  candidate_experiments[[i]]$beast2_options$output_state_filename <- "true_alignment_best.xml.state"
+  candidate_experiments[[i]]$inference_model$mcmc$tracelog$filename <- "true_alignment_best.log"
+  candidate_experiments[[i]]$inference_model$mcmc$treelog$filename <- "true_alignment_best.trees"
+  candidate_experiments[[i]]$inference_model$mcmc$screenlog$filename <- "true_alignment_best.csv"
+  candidate_experiments[[i]]$errors_filename <- "true_errors_best.csv"
+}
 check_experiments(candidate_experiments)
 
 experiments <- c(list(generative_experiment), candidate_experiments)
