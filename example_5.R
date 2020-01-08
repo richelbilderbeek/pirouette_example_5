@@ -64,17 +64,13 @@ for (i in seq_along(experiments)) {
 
 check_experiments(experiments)
 
-# Testing
-if (1 == 1) {
-  experiments <- experiments[1:2]
-  for (i in seq_along(experiments)) {
-    experiments[[i]]$inference_model$mcmc <- create_mcmc(chain_length = 10000, store_every = 1000)
-    experiments[[i]]$est_evidence_mcmc <- create_mcmc_nested_sampling(
-      chain_length = 10000,
-      store_every = 1000,
-      epsilon = 100.0
-    )
-  }
+# Shorter run
+for (i in seq_along(experiments)) {
+  experiments[[i]]$inference_model$mcmc$chain_length <- 10000
+  experiments[[i]]$inference_model$mcmc$store_every <- 1000
+  experiments[[i]]$est_evidence_mcmc$chain_length <- 10000
+  experiments[[i]]$est_evidence_mcmc$store_every <- 1000
+  experiments[[i]]$est_evidence_mcmc$epsilon <- 100.0
 }
 
 pir_params <- create_pir_params(
