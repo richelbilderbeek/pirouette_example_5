@@ -5,77 +5,25 @@ library(pirouette)
 library(babette)
 library(beautier)
 
-root_folder <- getwd()
+################################################################################
+# Constants
+################################################################################
+is_testing <- is_on_travis()
 example_no <- 5
 rng_seed <- 314
-example_folder <- file.path(root_folder, paste0("example_", example_no, "_", rng_seed))
-dir.create(example_folder, showWarnings = FALSE, recursive = TRUE)
-setwd(example_folder)
-set.seed(rng_seed)
-testit::assert(is_beast2_installed())
+folder_name <- paste0("example_", example_no, "_", rng_seed)
+
 phylogeny  <- ape::read.tree(
   text = "(((A:8, B:8):1, C:9):1, ((D:8, E:8):1, F:9):1);"
 )
 
-alignment_params <- create_alignment_params(
-  sim_tral_fun = get_sim_tral_with_std_nsm_fun(
-    mutation_rate = 0.1
-  ),
-  root_sequence = create_blocked_dna(length = 1000),
-  rng_seed = rng_seed,
-  fasta_filename = "true_alignment.fas"
-)
-
-# JC69, strict, Yule
-generative_experiment <- create_gen_experiment()
-generative_experiment$beast2_options$input_filename <- "true_alignment_gen.xml"
-generative_experiment$beast2_options$output_state_filename <- "true_alignment_gen.xml.state"
-generative_experiment$inference_model$mcmc$tracelog$filename <- "true_alignment_gen.log"
-generative_experiment$inference_model$mcmc$treelog$filename <- "true_alignment_gen.trees"
-generative_experiment$inference_model$mcmc$screenlog$filename <- "true_alignment_gen.csv"
-generative_experiment$errors_filename <- "true_errors_gen.csv"
-check_experiment(generative_experiment)
-
-# All non-Yule tree priors
-candidate_experiments <- create_all_experiments(
-  exclude_model = generative_experiment$inference_model
-)
-for (i in seq_along(candidate_experiments)) {
-  candidate_experiments[[i]]$beast2_options$input_filename <- "true_alignment_best.xml"
-  candidate_experiments[[i]]$beast2_options$output_state_filename <- "true_alignment_best.xml.state"
-  candidate_experiments[[i]]$inference_model$mcmc$tracelog$filename <- "true_alignment_best.log"
-  candidate_experiments[[i]]$inference_model$mcmc$treelog$filename <- "true_alignment_best.trees"
-  candidate_experiments[[i]]$inference_model$mcmc$screenlog$filename <- "true_alignment_best.csv"
-  candidate_experiments[[i]]$errors_filename <- "true_errors_best.csv"
-}
-check_experiments(candidate_experiments)
-
-experiments <- c(list(generative_experiment), candidate_experiments)
-
-# Set the RNG seed
-for (i in seq_along(experiments)) {
-  experiments[[i]]$beast2_options$rng_seed <- rng_seed
-}
+pir_params <- create_std_pir_params(folder_name = folder_name)
+pir_params$twinning_params <- NA
 
 # Shorter on Travis
-if (is_on_travis()) {
-  for (i in seq_along(experiments)) {
-    experiments[[i]]$inference_model$mcmc$chain_length <- 3000
-    experiments[[i]]$inference_model$mcmc$store_every <- 1000
-    experiments[[i]]$est_evidence_mcmc$chain_length <- 3000
-    experiments[[i]]$est_evidence_mcmc$store_every <- 1000
-    experiments[[i]]$est_evidence_mcmc$epsilon <- 100.0
-  }
+if (is_testing) {
+  pir_params <- shorten_pir_params(pir_params)
 }
-
-check_experiments(experiments)
-
-pir_params <- create_pir_params(
-  alignment_params = alignment_params,
-  experiments = experiments
-)
-
-rm_pir_param_files(pir_params)
 
 errors <- pir_run(
   phylogeny,
